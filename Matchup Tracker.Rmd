@@ -1,0 +1,92 @@
+---
+title: "Matchup Tracker"
+author: "Richard Legler"
+date: "June 17, 2024"
+output: 
+  rmdformats::readthedown:
+    number_sections: true
+    highlight: tango
+    df_print: paged
+    center: true
+---
+
+```{r setup, include=FALSE}
+# Set working directory
+knitr::opts_knit$set(root.dir = 'C:/Users/richa/OneDrive/Documents/Hyannis Harbor Hawks/Cape Code Data')
+
+# Clear environment
+rm(list=ls())
+
+# Import libraries
+library(dplyr)
+library(tidyr)
+```
+
+# Import & Transform Data
+## Import Data
+
+```{r}
+df <- read.csv("CCBL pbp 2024.csv")
+```
+
+## Filter for Hyannis Games
+
+```{r}
+df <- df %>%
+  filter(home_team %in% "Hyannis Harbor Hawks" | away_team %in% "Hyannis Harbor Hawks")
+```
+
+## Filter At Bats
+```{r}
+df <- df %>%
+  filter(!(lead(game_pk) == game_pk & lead(about.atBatIndex) == about.atBatIndex))
+```
+
+## Keep necessary columns
+
+```{r}
+df <- df[,c("matchup.batter.fullName","matchup.pitcher.fullName","batting_team","fielding_team")]
+```
+
+## Seperate Batting and Pitching
+
+```{r}
+df_batting <- df %>%
+  filter(batting_team %in% "Hyannis Harbor Hawks")
+
+df_pitching <- df %>%
+  filter(fielding_team %in% "Hyannis Harbor Hawks")
+```
+
+# Batter
+
+```{r}
+batting_pa_count <- df_batting %>%
+  group_by(matchup.batter.fullName, matchup.pitcher.fullName, fielding_team) %>%
+  summarize(count_pa = n(), .groups = 'drop') %>%
+  rename(
+    batter = matchup.batter.fullName,
+    pitcher = matchup.pitcher.fullName,
+    fielding_team = fielding_team
+  )
+```
+
+# Pitcher
+
+```{r}
+pitching_pa_count <- df_pitching %>%
+  group_by(matchup.batter.fullName, matchup.pitcher.fullName, batting_team) %>%
+  summarize(count_pa = n(), .groups = 'drop') %>%
+  rename(
+    batter = matchup.batter.fullName,
+    pitcher = matchup.pitcher.fullName,
+    batting_team = batting_team
+  )
+```
+
+# Export
+
+```{r}
+write.csv(batting_pa_count, "C:/Users/richa/OneDrive/Documents/Hyannis Harbor Hawks/Matchup Tracker/Batting Tracker.csv", row.names = FALSE)
+write.csv(pitching_pa_count, "C:/Users/richa/OneDrive/Documents/Hyannis Harbor Hawks/Matchup Tracker/Pitching Tracker.csv", row.names = FALSE)
+```
